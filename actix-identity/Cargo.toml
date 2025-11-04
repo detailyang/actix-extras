@@ -1,29 +1,40 @@
 [package]
 name = "actix-identity"
-version = "0.3.0"
-authors = ["Nikolay Kim <fafhrd91@gmail.com>"]
-description = "Identity service for Actix web"
-readme = "README.md"
+version = "0.9.0"
+authors = [
+    "Nikolay Kim <fafhrd91@gmail.com>",
+    "Luca Palmieri <rust@lpalmieri.com>",
+]
+description = "Identity management for Actix Web"
 keywords = ["actix", "auth", "identity", "web", "security"]
-homepage = "https://actix.rs"
-repository = "https://github.com/actix/actix-web.git"
-documentation = "https://docs.rs/actix-identity/"
-license = "MIT OR Apache-2.0"
-edition = "2018"
+repository.workspace = true
+homepage.workspace = true
+license.workspace = true
+edition.workspace = true
+rust-version.workspace = true
 
-[lib]
-name = "actix_identity"
-path = "src/lib.rs"
+[package.metadata.docs.rs]
+all-features = true
 
 [dependencies]
-actix-web = { version = "3.0.0", default-features = false, features = ["secure-cookies"] }
-actix-service = "1.0.6"
-futures-util = { version = "0.3.4", default-features = false }
-serde = "1.0"
-serde_json = "1.0"
-time = { version = "0.2.7", default-features = false, features = ["std"] }
+actix-service = "2"
+actix-session = "0.11"
+actix-utils = "3"
+actix-web = { version = "4", default-features = false, features = ["cookies", "secure-cookies"] }
+
+derive_more = { version = "2", features = ["display", "error", "from"] }
+futures-core = "0.3.17"
+serde = { version = "1", features = ["derive"] }
+tracing = { version = "0.1.30", default-features = false, features = ["log"] }
 
 [dev-dependencies]
-actix-rt = "1.1.1"
-actix-http = "2.0.0"
-bytes = "0.5.3"
+actix-http = "3"
+actix-web = { version = "4", default-features = false, features = ["macros", "cookies", "secure-cookies"] }
+actix-session = { version = "0.11", features = ["redis-session", "cookie-session"] }
+
+env_logger = "0.11"
+reqwest = { version = "0.12", default-features = false, features = ["cookies", "json"] }
+uuid = { version = "1", features = ["v4"] }
+
+[lints]
+workspace = true

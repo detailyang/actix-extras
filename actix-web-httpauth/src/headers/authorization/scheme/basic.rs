@@ -1,15 +1,15 @@
-use std::borrow::Cow;
-use std::fmt;
-use std::str;
+use std::{borrow::Cow, fmt, str};
 
-use actix_web::http::header::{HeaderValue, IntoHeaderValue, InvalidHeaderValue};
-use bytes::{BufMut, BytesMut};
+use actix_web::{
+    http::header::{HeaderValue, InvalidHeaderValue, TryIntoHeaderValue},
+    web::{BufMut, BytesMut},
+};
+use base64::{prelude::BASE64_STANDARD, Engine};
 
-use crate::headers::authorization::errors::ParseError;
-use crate::headers::authorization::Scheme;
+use crate::headers::authorization::{errors::ParseError, Scheme};
 
 /// Credentials for `Basic` authentication scheme, defined in [RFC 7617](https://tools.ietf.org/html/rfc7617)
-#[derive(Clone, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Basic {
     user_id: Cow<'static, str>,
     password: Option<Cow<'static, str>>,
@@ -19,8 +19,7 @@ impl Basic {
     /// Creates `Basic` credentials with provided `user_id` and optional
     /// `password`.
     ///
-    /// ## Example
-    ///
+    /// # Examples
     /// ```
     /// # use actix_web_httpauth::headers::authorization::Basic;
     /// let credentials = Basic::new("Alladin", Some("open sesame"));
@@ -37,13 +36,13 @@ impl Basic {
     }
 
     /// Returns client's user-ID.
-    pub fn user_id(&self) -> &Cow<'static, str> {
-        &self.user_id
+    pub fn user_id(&self) -> &str {
+        self.user_id.as_ref()
     }
 
     /// Returns client's password if provided.
-    pub fn password(&self) -> Option<&Cow<'static, str>> {
-        self.password.as_ref()
+    pub fn password(&self) -> Option<&str> {
+        self.password.as_deref()
     }
 }
 
@@ -56,17 +55,18 @@ impl Scheme for Basic {
 
         let mut parts = header.to_str()?.splitn(2, ' ');
         match parts.next() {
-            Some(scheme) if scheme == "Basic" => (),
+            Some("Basic") => (),
             _ => return Err(ParseError::MissingScheme),
         }
 
-        let decoded = base64::decode(parts.next().ok_or(ParseError::Invalid)?)?;
+        let decoded = BASE64_STANDARD.decode(parts.next().ok_or(ParseError::Invalid)?)?;
         let mut credentials = str::from_utf8(&decoded)?.splitn(2, ':');
 
         let user_id = credentials
             .next()
             .ok_or(ParseError::MissingField("user_id"))
             .map(|user_id| user_id.to_string().into())?;
+
         let password = credentials
             .next()
             .ok_or(ParseError::MissingField("password"))
@@ -94,15 +94,17 @@ impl fmt::Display for Basic {
     }
 }
 
-impl IntoHeaderValue for Basic {
+impl TryIntoHeaderValue for Basic {
     type Error = InvalidHeaderValue;
 
-    fn try_into(self) -> Result<HeaderValue, <Self as IntoHeaderValue>::Error> {
-        let mut credentials = BytesMut::with_capacity(
-            self.user_id.len()
-                + 1 // ':'
-                + self.password.as_ref().map_or(0, |pwd| pwd.len()),
-        );
+    fn try_into_value(self) -> Result<HeaderValue, Self::Error> {
+        let credential_length =
+            self.user_id.len() + 1 + self.password.as_ref().map_or(0, |pwd| pwd.len());
+        // The length of BASE64 encoded bytes is `4 * credential_length.div_ceil(3)`
+        // TODO: Use credential_length.div_ceil(3) when `int_roundings` becomes stable
+        // https://github.com/rust-lang/rust/issues/88581
+        let mut value = String::with_capacity(6 + 4 * (credential_length + 2) / 3);
+        let mut credentials = BytesMut::with_capacity(credential_length);
 
         credentials.extend_from_slice(self.user_id.as_bytes());
         credentials.put_u8(b':');
@@ -110,21 +112,16 @@ impl IntoHeaderValue for Basic {
             credentials.extend_from_slice(password.as_bytes());
         }
 
-        // TODO: It would be nice not to allocate new `String`  here but write
-        // directly to `value`
-        let encoded = base64::encode(&credentials);
-        let mut value = BytesMut::with_capacity(6 + encoded.len());
-        value.put(&b"Basic "[..]);
-        value.put(&encoded.as_bytes()[..]);
+        value.push_str("Basic ");
+        BASE64_STANDARD.encode_string(&credentials, &mut value);
 
-        HeaderValue::from_maybe_shared(value.freeze())
+        HeaderValue::from_maybe_shared(value)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{Basic, Scheme};
-    use actix_web::http::header::{HeaderValue, IntoHeaderValue};
+    use super::*;
 
     #[test]
     fn test_parse_header() {
@@ -187,7 +184,7 @@ mod tests {
             password: Some("open sesame".into()),
         };
 
-        let result = basic.try_into();
+        let result = basic.try_into_value();
         assert!(result.is_ok());
         assert_eq!(
             result.unwrap(),

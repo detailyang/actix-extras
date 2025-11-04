@@ -1,33 +1,59 @@
 [package]
 name = "actix-session"
-version = "0.4.0"
-authors = ["Nikolay Kim <fafhrd91@gmail.com>"]
-description = "Sessions for Actix web"
-readme = "README.md"
+version = "0.11.0"
+authors = [
+  "Nikolay Kim <fafhrd91@gmail.com>",
+  "Luca Palmieri <rust@lpalmieri.com>",
+]
+description = "Session management for Actix Web"
 keywords = ["http", "web", "framework", "async", "session"]
-homepage = "https://actix.rs"
-repository = "https://github.com/actix/actix-web.git"
-documentation = "https://docs.rs/actix-session/"
-license = "MIT OR Apache-2.0"
-edition = "2018"
+repository.workspace = true
+homepage.workspace = true
+license.workspace = true
+edition.workspace = true
+rust-version.workspace = true
 
-[lib]
-name = "actix_session"
-path = "src/lib.rs"
+[package.metadata.docs.rs]
+all-features = true
 
 [features]
-default = ["cookie-session"]
-cookie-session = ["actix-web/secure-cookies"]
+default = []
+cookie-session = []
+redis-session = ["dep:redis"]
+redis-session-native-tls = ["redis-session", "redis/tokio-native-tls-comp"]
+redis-session-rustls = ["redis-session", "redis/tokio-rustls-comp"]
+redis-pool = ["dep:deadpool-redis"]
 
 [dependencies]
-actix-web = { version = "3.0.0", default_features = false }
-actix-service = "1.0.6"
-bytes = "0.5.3"
-derive_more = "0.99.2"
-futures-util = { version = "0.3.4", default-features = false }
-serde = "1.0"
-serde_json = "1.0"
-time = { version = "0.2.7", default-features = false, features = ["std"] }
+actix-service = "2"
+actix-utils = "3"
+actix-web = { version = "4", default-features = false, features = ["cookies", "secure-cookies"] }
+
+anyhow = "1"
+derive_more = { version = "2", features = ["display", "error", "from"] }
+rand = "0.9"
+serde = { version = "1" }
+serde_json = { version = "1" }
+tracing = { version = "0.1.30", default-features = false, features = ["log"] }
+
+# redis-session
+redis = { version = "0.32", default-features = false, features = ["tokio-comp", "connection-manager"], optional = true }
+deadpool-redis = { version = "0.22", optional = true }
 
 [dev-dependencies]
-actix-rt = "1"
+actix-session = { path = ".", features = ["cookie-session", "redis-session"] }
+actix-test = "0.1"
+actix-web = { version = "4", default-features = false, features = ["cookies", "secure-cookies", "macros"] }
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tracing = "0.1.30"
+
+[lints]
+workspace = true
+
+[[example]]
+name = "basic"
+required-features = ["redis-session"]
+
+[[example]]
+name = "authentication"
+required-features = ["redis-session"]

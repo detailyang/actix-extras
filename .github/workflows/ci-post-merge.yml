@@ -1,0 +1,107 @@
+name: CI (post-merge)
+
+on:
+  push: { branches: [master] }
+
+permissions: { contents: read }
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build_and_test_linux_nightly:
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - { name: Linux, os: ubuntu-latest, triple: x86_64-unknown-linux-gnu }
+
+    name: ${{ matrix.target.name }} / nightly
+    runs-on: ${{ matrix.target.os }}
+
+    services:
+      redis:
+        image: redis:5.0.7
+        ports:
+          - 6379:6379
+        options: --entrypoint redis-server
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install Rust (nightly)
+        uses: actions-rust-lang/setup-rust-toolchain@v1.15.2
+        with:
+          toolchain: nightly
+
+      - name: Install cargo-hack, cargo-ci-cache-clean
+        uses: taiki-e/install-action@v2.62.44
+        with:
+          tool: cargo-hack,cargo-ci-cache-clean
+
+      - name: check minimal
+        run: cargo ci-min
+
+      - name: check minimal + examples
+        run: cargo ci-check-min-examples
+
+      - name: check default
+        run: cargo ci-check
+
+      - name: tests
+        timeout-minutes: 40
+        run: cargo ci-test
+
+      - name: CI cache clean
+        run: cargo-ci-cache-clean
+
+  build_and_test_other_nightly:
+    strategy:
+      fail-fast: false
+      # prettier-ignore
+      matrix:
+        target:
+          - { name: macOS, os: macos-latest, triple: x86_64-apple-darwin }
+          - { name: Windows, os: windows-latest, triple: x86_64-pc-windows-msvc }
+
+    name: ${{ matrix.target.name }} / nightly
+    runs-on: ${{ matrix.target.os }}
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install OpenSSL
+        if: matrix.target.os == 'windows-latest'
+        shell: bash
+        run: |
+          set -e
+          choco install openssl --version=1.1.1.2100 -y --no-progress
+          echo 'OPENSSL_DIR=C:\Program Files\OpenSSL' >> $GITHUB_ENV
+          echo "RUSTFLAGS=-C target-feature=+crt-static" >> $GITHUB_ENV
+
+      - name: Install Rust (nightly)
+        uses: actions-rust-lang/setup-rust-toolchain@v1.15.2
+        with:
+          toolchain: nightly
+
+      - name: Install cargo-hack and cargo-ci-cache-clean
+        uses: taiki-e/install-action@v2.62.44
+        with:
+          tool: cargo-hack,cargo-ci-cache-clean
+
+      - name: check minimal
+        run: cargo ci-min
+
+      - name: check minimal + examples
+        run: cargo ci-check-min-examples
+
+      - name: check default
+        run: cargo ci-check
+
+      - name: tests
+        timeout-minutes: 40
+        run: cargo ci-test --exclude=actix-session --exclude=actix-limitation -- --nocapture
+
+      - name: CI cache clean
+        run: cargo-ci-cache-clean

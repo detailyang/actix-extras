@@ -1,0 +1,47 @@
+name: Coverage
+
+on:
+  push:
+    branches: [master]
+
+permissions: { contents: read }
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+
+    services:
+      redis:
+        image: redis:5.0.7
+        ports:
+          - 6379:6379
+        options: --entrypoint redis-server
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1.15.2
+        with:
+          toolchain: nightly
+          components: llvm-tools-preview
+
+      - name: Install just, cargo-llvm-cov, cargo-nextest
+        uses: taiki-e/install-action@v2.62.44
+        with:
+          tool: just,cargo-llvm-cov,cargo-nextest
+
+      - name: Generate code coverage
+        run: just test-coverage-codecov
+
+      - name: Upload to Codecov
+        uses: codecov/codecov-action@v5.5.1
+        with:
+          files: codecov.json
+          fail_ci_if_error: true
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

@@ -1,22 +1,37 @@
 # actix-web-httpauth
 
-[![crates.io](https://img.shields.io/crates/v/actix-web-httpauth)](https://crates.io/crates/actix-web-httpauth)
-[![Documentation](https://docs.rs/actix-web-httpauth/badge.svg)](https://docs.rs/actix-web-httpauth)
-[![Dependency Status](https://deps.rs/crate/actix-web-httpauth/0.4.2/status.svg)](https://deps.rs/crate/actix-web-httpauth/0.4.2)
+> HTTP authentication schemes for [Actix Web](https://actix.rs).
+
+<!-- prettier-ignore-start -->
+
+[![crates.io](https://img.shields.io/crates/v/actix-web-httpauth?label=latest)](https://crates.io/crates/actix-web-httpauth)
+[![Documentation](https://docs.rs/actix-web-httpauth/badge.svg?version=0.8.2)](https://docs.rs/actix-web-httpauth/0.8.2)
 ![Apache 2.0 or MIT licensed](https://img.shields.io/crates/l/actix-web-httpauth)
-[![Join the chat at https://gitter.im/actix/actix](https://badges.gitter.im/actix/actix.svg)](https://gitter.im/actix/actix?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Dependency Status](https://deps.rs/crate/actix-web-httpauth/0.8.2/status.svg)](https://deps.rs/crate/actix-web-httpauth/0.8.2)
 
-> HTTP authentication schemes for [actix-web](https://github.com/actix/actix-web) framework.
+<!-- prettier-ignore-end -->
 
-Provides:
- * typed [Authorization] and [WWW-Authenticate] headers
- * [extractors] for an [Authorization] header
- * [middleware] for easier authorization checking
+## Documentation & Resources
 
-All supported schemas are actix [Extractors](https://docs.rs/actix-web/2.0.0/actix_web/trait.FromRequest.html),
-and can be used both in the middlewares and request handlers.
+- [API Documentation](https://docs.rs/actix-web-httpauth/)
+- Minimum Supported Rust Version (MSRV): 1.57
 
-## Supported schemes
+## Features
 
- * [Basic](https://tools.ietf.org/html/rfc7617)
- * [Bearer](https://tools.ietf.org/html/rfc6750)
+- Typed [Authorization] and [WWW-Authenticate] headers
+- [Extractors] for authorization headers
+- [Middleware] for easier authorization checking
+
+All supported schemas can be used in both middleware and request handlers.
+
+## Supported Schemes
+
+- [HTTP Basic](https://tools.ietf.org/html/rfc7617)
+- [OAuth Bearer](https://tools.ietf.org/html/rfc6750)
+
+<!-- LINKS -->
+
+[Authorization]: https://docs.rs/actix-web-httpauth/*/actix_web_httpauth/headers/authorization/index.html
+[WWW-Authenticate]: https://docs.rs/actix-web-httpauth/*/actix_web_httpauth/headers/www_authenticate/index.html
+[Extractors]: https://actix.rs/docs/extractors/
+[Middleware]: https://docs.rs/actix-web-httpauth/*/actix_web_httpauth/middleware/index.html

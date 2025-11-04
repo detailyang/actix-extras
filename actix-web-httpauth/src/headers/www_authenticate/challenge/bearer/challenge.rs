@@ -1,19 +1,16 @@
-use std::borrow::Cow;
-use std::fmt;
-use std::str;
+use std::{borrow::Cow, fmt, str};
 
-use actix_web::http::header::{HeaderValue, IntoHeaderValue, InvalidHeaderValue};
-use bytes::{BufMut, Bytes, BytesMut};
+use actix_web::{
+    http::header::{HeaderValue, InvalidHeaderValue, TryIntoHeaderValue},
+    web::{BufMut, Bytes, BytesMut},
+};
 
-use super::super::Challenge;
-use super::{BearerBuilder, Error};
+use super::{super::Challenge, BearerBuilder, Error};
 use crate::utils;
 
-/// Challenge for [`WWW-Authenticate`] header with HTTP Bearer auth scheme,
-/// described in [RFC 6750](https://tools.ietf.org/html/rfc6750#section-3)
+/// Challenge for [`WWW-Authenticate`] header with HTTP Bearer auth scheme, described in [RFC 6750].
 ///
-/// ## Example
-///
+/// # Examples
 /// ```
 /// # use actix_web::{web, App, HttpRequest, HttpResponse, HttpServer};
 /// use actix_web_httpauth::headers::www_authenticate::bearer::{
@@ -31,13 +28,14 @@ use crate::utils;
 ///         .finish();
 ///
 ///     HttpResponse::Unauthorized()
-///         .set(WwwAuthenticate(challenge))
+///         .insert_header(WwwAuthenticate(challenge))
 ///         .finish()
 /// }
 /// ```
 ///
-/// [`WWW-Authenticate`]: ../struct.WwwAuthenticate.html
-#[derive(Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, Clone)]
+/// [`WWW-Authenticate`]: crate::headers::www_authenticate::WwwAuthenticate
+/// [RFC 6750]: https://tools.ietf.org/html/rfc6750#section-3
+#[derive(Debug, Default, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Bearer {
     pub(crate) scope: Option<Cow<'static, str>>,
     pub(crate) realm: Option<Cow<'static, str>>,
@@ -49,8 +47,7 @@ pub struct Bearer {
 impl Bearer {
     /// Creates the builder for `Bearer` challenge.
     ///
-    /// ## Example
-    ///
+    /// # Examples
     /// ```
     /// # use actix_web_httpauth::headers::www_authenticate::bearer::{Bearer};
     /// let challenge = Bearer::build()
@@ -71,10 +68,12 @@ impl Challenge for Bearer {
             .as_ref()
             .map_or(0, |desc| desc.len() + 20)
             + self.error_uri.as_ref().map_or(0, |url| url.len() + 12);
+
         let capacity = 6
             + self.realm.as_ref().map_or(0, |realm| realm.len() + 9)
             + self.scope.as_ref().map_or(0, |scope| scope.len() + 9)
             + desc_uri_required;
+
         let mut buffer = BytesMut::with_capacity(capacity);
         buffer.put(&b"Bearer"[..]);
 
@@ -94,9 +93,11 @@ impl Challenge for Bearer {
             let error_repr = error.as_str();
             let remaining = buffer.remaining_mut();
             let required = desc_uri_required + error_repr.len() + 9; // 9 is for `" error=\"\""`
+
             if remaining < required {
                 buffer.reserve(required);
             }
+
             buffer.put(&b" error=\""[..]);
             utils::put_quoted(&mut buffer, error_repr);
             buffer.put_u8(b'"')
@@ -121,6 +122,7 @@ impl Challenge for Bearer {
 impl fmt::Display for Bearer {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
         let bytes = self.to_bytes();
+
         let repr = str::from_utf8(&bytes)
             // Should not happen since challenges are crafted manually
             // from `&'static str`'s and Strings
@@ -130,10 +132,10 @@ impl fmt::Display for Bearer {
     }
 }
 
-impl IntoHeaderValue for Bearer {
+impl TryIntoHeaderValue for Bearer {
     type Error = InvalidHeaderValue;
 
-    fn try_into(self) -> Result<HeaderValue, <Self as IntoHeaderValue>::Error> {
+    fn try_into_value(self) -> Result<HeaderValue, Self::Error> {
         HeaderValue::from_maybe_shared(self.to_bytes())
     }
 }

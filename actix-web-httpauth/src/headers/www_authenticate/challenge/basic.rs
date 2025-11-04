@@ -1,12 +1,11 @@
-//! Challenge for the "Basic" HTTP Authentication Scheme
+//! Challenge for the "Basic" HTTP Authentication Scheme.
 
-use std::borrow::Cow;
-use std::default::Default;
-use std::fmt;
-use std::str;
+use std::{borrow::Cow, fmt, str};
 
-use actix_web::http::header::{HeaderValue, IntoHeaderValue, InvalidHeaderValue};
-use bytes::{BufMut, Bytes, BytesMut};
+use actix_web::{
+    http::header::{HeaderValue, InvalidHeaderValue, TryIntoHeaderValue},
+    web::{BufMut, Bytes, BytesMut},
+};
 
 use super::Challenge;
 use crate::utils;
@@ -14,8 +13,7 @@ use crate::utils;
 /// Challenge for [`WWW-Authenticate`] header with HTTP Basic auth scheme,
 /// described in [RFC 7617](https://tools.ietf.org/html/rfc7617)
 ///
-/// ## Example
-///
+/// # Examples
 /// ```
 /// # use actix_web::{web, App, HttpRequest, HttpResponse, HttpServer};
 /// use actix_web_httpauth::headers::www_authenticate::basic::Basic;
@@ -25,7 +23,7 @@ use crate::utils;
 ///     let challenge = Basic::with_realm("Restricted area");
 ///
 ///     HttpResponse::Unauthorized()
-///         .set(WwwAuthenticate(challenge))
+///         .insert_header(WwwAuthenticate(challenge))
 ///         .finish()
 /// }
 /// ```
@@ -40,8 +38,7 @@ pub struct Basic {
 impl Basic {
     /// Creates new `Basic` challenge with an empty `realm` field.
     ///
-    /// ## Example
-    ///
+    /// # Examples
     /// ```
     /// # use actix_web_httpauth::headers::www_authenticate::basic::Basic;
     /// let challenge = Basic::new();
@@ -52,7 +49,7 @@ impl Basic {
 
     /// Creates new `Basic` challenge from the provided `realm` field value.
     ///
-    /// ## Examples
+    /// # Examples
     ///
     /// ```
     /// # use actix_web_httpauth::headers::www_authenticate::basic::Basic;
@@ -96,31 +93,30 @@ impl fmt::Display for Basic {
         let bytes = self.to_bytes();
         let repr = str::from_utf8(&bytes)
             // Should not happen since challenges are crafted manually
-            // from `&'static str`'s and Strings
+            // from a `&'static str` or `String`
             .map_err(|_| fmt::Error)?;
 
         f.write_str(repr)
     }
 }
 
-impl IntoHeaderValue for Basic {
+impl TryIntoHeaderValue for Basic {
     type Error = InvalidHeaderValue;
 
-    fn try_into(self) -> Result<HeaderValue, <Self as IntoHeaderValue>::Error> {
+    fn try_into_value(self) -> Result<HeaderValue, Self::Error> {
         HeaderValue::from_maybe_shared(self.to_bytes())
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::Basic;
-    use actix_web::http::header::IntoHeaderValue;
+    use super::*;
 
     #[test]
     fn test_plain_into_header_value() {
         let challenge = Basic { realm: None };
 
-        let value = challenge.try_into();
+        let value = challenge.try_into_value();
         assert!(value.is_ok());
         let value = value.unwrap();
         assert_eq!(value, "Basic");
@@ -132,7 +128,7 @@ mod tests {
             realm: Some("Restricted area".into()),
         };
 
-        let value = challenge.try_into();
+        let value = challenge.try_into_value();
         assert!(value.is_ok());
         let value = value.unwrap();
         assert_eq!(value, "Basic realm=\"Restricted area\"");

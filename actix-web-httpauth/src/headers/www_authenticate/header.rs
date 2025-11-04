@@ -1,20 +1,22 @@
-use actix_web::error::ParseError;
-use actix_web::http::header::{
-    Header, HeaderName, HeaderValue, IntoHeaderValue, WWW_AUTHENTICATE,
+use actix_web::{
+    error::ParseError,
+    http::header::{Header, HeaderName, HeaderValue, TryIntoHeaderValue, WWW_AUTHENTICATE},
+    HttpMessage,
 };
-use actix_web::HttpMessage;
 
 use super::Challenge;
 
-/// `WWW-Authenticate` header, described in [RFC 7235](https://tools.ietf.org/html/rfc7235#section-4.1)
+/// `WWW-Authenticate` header, described in [RFC 7235].
 ///
-/// This header is generic over [Challenge](./trait.Challenge.html) trait,
-/// see [Basic](./basic/struct.Basic.html) and
-/// [Bearer](./bearer/struct.Bearer.html) challenges for details.
-#[derive(Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, Clone)]
+/// This header is generic over the [`Challenge`] trait, see [`Basic`](super::basic::Basic) and
+/// [`Bearer`](super::bearer::Bearer) challenges for details.
+///
+/// [RFC 7235]: https://tools.ietf.org/html/rfc7235#section-4.1
+#[derive(Debug, Default, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct WwwAuthenticate<C: Challenge>(pub C);
 
 impl<C: Challenge> Header for WwwAuthenticate<C> {
+    #[inline]
     fn name() -> HeaderName {
         WWW_AUTHENTICATE
     }
@@ -24,10 +26,10 @@ impl<C: Challenge> Header for WwwAuthenticate<C> {
     }
 }
 
-impl<C: Challenge> IntoHeaderValue for WwwAuthenticate<C> {
-    type Error = <C as IntoHeaderValue>::Error;
+impl<C: Challenge> TryIntoHeaderValue for WwwAuthenticate<C> {
+    type Error = <C as TryIntoHeaderValue>::Error;
 
-    fn try_into(self) -> Result<HeaderValue, <Self as IntoHeaderValue>::Error> {
-        self.0.try_into()
+    fn try_into_value(self) -> Result<HeaderValue, Self::Error> {
+        self.0.try_into_value()
     }
 }

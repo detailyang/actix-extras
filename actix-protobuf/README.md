@@ -1,14 +1,21 @@
 # actix-protobuf
 
-[![crates.io](https://img.shields.io/crates/v/actix-protobuf)](https://crates.io/crates/actix-protobuf)
-[![Documentation](https://docs.rs/actix-protobuf/badge.svg)](https://docs.rs/actix-protobuf)
-[![Dependency Status](https://deps.rs/crate/actix-protobuf/0.5.1/status.svg)](https://deps.rs/crate/actix-protobuf/0.5.1)
+> Protobuf payload extractor for Actix Web.
+
+<!-- prettier-ignore-start -->
+
+[![crates.io](https://img.shields.io/crates/v/actix-protobuf?label=latest)](https://crates.io/crates/actix-protobuf)
+[![Documentation](https://docs.rs/actix-protobuf/badge.svg?version=0.11.0)](https://docs.rs/actix-protobuf/0.11.0)
 ![Apache 2.0 or MIT licensed](https://img.shields.io/crates/l/actix-protobuf)
-[![Join the chat at https://gitter.im/actix/actix](https://badges.gitter.im/actix/actix.svg)](https://gitter.im/actix/actix?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Dependency Status](https://deps.rs/crate/actix-protobuf/0.11.0/status.svg)](https://deps.rs/crate/actix-protobuf/0.11.0)
 
-> Protobuf support for actix-web framework.
+<!-- prettier-ignore-end -->
 
-* Minimum supported Rust version: 1.40.0 or later
+## Documentation & Resources
+
+- [API Documentation](https://docs.rs/actix-protobuf)
+- [Example Project](https://github.com/actix/examples/tree/master/protobuf)
+- Minimum Supported Rust Version (MSRV): 1.57
 
 ## Example
 
@@ -20,6 +27,7 @@ use actix_web::*;
 pub struct MyObj {
     #[prost(int32, tag = "1")]
     pub number: i32,
+
     #[prost(string, tag = "2")]
     pub name: String,
 }
@@ -30,13 +38,13 @@ async fn index(msg: ProtoBuf<MyObj>) -> Result<HttpResponse> {
 }
 ```
 
-See [here](https://github.com/actix/actix-protobuf/tree/master/examples/prost-example) for the complete example.
+See [here](https://github.com/actix/examples/tree/master/protobuf) for the complete example.
 
 ## License
 
 This project is licensed under either of
 
-* Apache License, Version 2.0, ([LICENSE-APACHE](LICENSE-APACHE) or [https://www.apache.org/licenses/LICENSE-2.0](https://www.apache.org/licenses/LICENSE-2.0))
-* MIT license ([LICENSE-MIT](LICENSE-MIT) or [https://opensource.org/licenses/MIT](https://opensource.org/licenses/MIT))
+- Apache License, Version 2.0, ([LICENSE-APACHE](LICENSE-APACHE) or [https://www.apache.org/licenses/LICENSE-2.0](https://www.apache.org/licenses/LICENSE-2.0))
+- MIT license ([LICENSE-MIT](LICENSE-MIT) or [https://opensource.org/licenses/MIT](https://opensource.org/licenses/MIT))
 
 at your option.
